@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ABG &middot; Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F6FB;
+    --panel:#FFFFFF;
+    --panel-2:#F0F3F9;
+    --hairline:#DCE3EE;
+    --navy:#123A73;
+    --navy-deep:#0A2550;
+    --orange:#F2901E;
+    --orange-deep:#D97A0A;
+    --danger:#E5484D;
+    --text:#152238;
+    --muted:#6C7A90;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;}
+  body{padding-bottom:110px;}
+
+  header{
+    position:sticky;top:0;z-index:10;
+    background:linear-gradient(180deg,var(--bg) 80%,rgba(243,246,251,0));
+    padding:18px 18px 10px;
+    border-bottom:1px solid var(--hairline);
+    display:flex;align-items:center;gap:12px;
+  }
+  header .logo-mark{
+    height:42px;width:42px;flex:none;border-radius:10px;
+    background:linear-gradient(135deg,#173d7b,#112d60);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;letter-spacing:-.5px;
+  }
+  header .htext{display:flex;flex-direction:column;}
+  .eyebrow{
+    font-family:'Inter',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:.18em;color:var(--orange-deep);
+    text-transform:uppercase;margin-bottom:2px;
+  }
+  h1{font-family:'Poppins',sans-serif;font-size:20px;font-weight:800;margin:0;color:var(--navy-deep);letter-spacing:-.01em;}
+  .subline{color:var(--muted);font-size:12px;margin-top:2px;}
+
+  .reminder-bar{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+    margin:0 18px 4px;padding:10px 12px;border-radius:12px;
+    background:var(--panel);border:1px solid var(--hairline);font-size:12px;
+  }
+  .reminder-bar .rb-item{display:flex;flex-direction:column;gap:1px;}
+  .reminder-bar .rb-label{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .reminder-bar .rb-value{font-size:13px;font-weight:700;color:var(--navy);}
+  .reminder-bar .rb-value.ok{color:#178453;}
+  .reminder-bar .rb-value.warn{color:var(--orange-deep);}
+  .reminder-bar .rb-value.bad{color:var(--danger);}
+
+  main{padding:18px;max-width:520px;margin:0 auto;}
+
+  .section{margin-bottom:26px;}
+  .section-title{
+    font-family:'Inter',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--navy);margin:0 0 10px 2px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .section-title::after{content:"";flex:1;height:1px;background:var(--hairline);}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .card{
+    background:var(--panel);border:1px solid var(--hairline);
+    border-radius:var(--radius);padding:14px 12px;
+    box-shadow:0 1px 2px rgba(10,37,80,.04);
+  }
+  .card-label{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px;
+    min-height:32px;display:flex;align-items:flex-start;}
+  .card-hint{font-size:10.5px;color:var(--muted);margin-top:6px;line-height:1.4;}
+
+  .stepper{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .step-btn{
+    width:40px;height:40px;border-radius:10px;border:1px solid var(--hairline);
+    background:var(--panel-2);color:var(--navy);font-size:20px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    user-select:none;touch-action:manipulation;
+  }
+  .step-btn:active{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  .flap{
+    font-family:'Poppins',sans-serif;font-weight:700;font-size:24px;
+    color:var(--navy);min-width:46px;width:56px;text-align:center;
+    transition:transform .12s ease;
+    border:none;background:transparent;outline:none;padding:0;
+    caret-color:var(--navy);
+    -webkit-appearance:none;-moz-appearance:textfield;
+  }
+  .flap::-webkit-outer-spin-button,.flap::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .flap.flip{transform:rotateX(90deg);}
+
+  .card.staffing{border-color:var(--orange);background:#FFF8EF;}
+  .card.staffing .card-label{color:var(--orange-deep);}
+  .card.staffing .flap{color:var(--orange-deep);caret-color:var(--orange-deep);}
+  .card.staffing .step-btn{border-color:#F3D6AE;}
+  .card.staffing .step-btn:active{background:var(--orange);border-color:var(--orange);color:#fff;}
+
+  .card.invalid{border-color:var(--danger);}
+  .card.invalid .card-label{color:var(--danger);}
+  .card.invalid .flap{color:var(--danger);}
+
+  .lot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  footer{
+    position:fixed;bottom:0;left:0;right:0;
+    padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(0deg,var(--bg) 70%,rgba(243,246,251,0));
+  }
+  .submit-btn{
+    max-width:520px;margin:0 auto;display:block;width:100%;
+    background:var(--orange);color:#fff;border:none;border-radius:var(--radius);
+    padding:16px;font-size:16px;font-weight:700;letter-spacing:.02em;
+    cursor:pointer;touch-action:manipulation;
+    box-shadow:0 4px 14px rgba(242,144,30,.35);
+  }
+  .submit-btn:active{background:var(--orange-deep);}
+  .submit-btn:disabled{background:#E7C79C;box-shadow:none;color:#fff;}
+
+  .toast{
+    position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-140%);
+    background:var(--navy-deep);border:1px solid var(--navy);color:#fff;
+    padding:12px 18px;border-radius:10px;font-size:14px;z-index:20;
+    transition:transform .25s ease;font-family:'Inter',sans-serif;font-weight:600;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--danger);border-color:var(--danger);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark" aria-hidden="true">MLS</div>
+  <div class="htext">
+    <div class="eyebrow">ABG &middot; Horizon MLS</div>
+    <h1>Lot Scorecard</h1>
+    <div class="subline" id="stamp"></div>
+  </div>
+</header>
+
+<div class="reminder-bar" id="reminderBar">
+  <div class="rb-item">
+    <span class="rb-label">Last Submitted</span>
+    <span class="rb-value" id="lastSubmitValue">—</span>
+  </div>
+  <div class="rb-item">
+    <span class="rb-label">Next Due</span>
+    <span class="rb-value" id="nextDueValue">—</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="section" id="sec-staffing">
+    <div class="section-title">Staffing On Site</div>
+    <div class="row" data-group="staffing"></div>
+  </div>
+
+  <div class="section" id="sec-fleet">
+    <div class="section-title">Lot Space Counts</div>
+    <div class="lot-grid" data-group="fleet"></div>
+  </div>
+
+  <div class="section" id="sec-qta">
+    <div class="section-title">QTA</div>
+    <div class="row" data-group="qta"></div>
+  </div>
+
+  <div class="section" id="sec-activity">
+    <div class="section-title">Activity</div>
+    <div class="row" data-group="activity"></div>
+  </div>
+
+  <div class="section" id="sec-ev">
+    <div class="section-title">EV Status</div>
+    <div class="row" data-group="ev"></div>
+  </div>
+
+</main>
+
+<footer>
+  <button class="submit-btn" id="submitBtn">Submit Scorecard</button>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==========================================================================
+// This form is hosted externally (e.g. GitHub Pages), not inside Apps
+// Script's HtmlService. Submissions go through a plain fetch() POST to the
+// Apps Script JSON API (doPost in Code.gs) -- no google.script.run, no
+// Google-injected banner, no iframe sandbox.
+// ==========================================================================
+
+// Paste your Apps Script Web App URL here after deploying Code.gs
+// (Deploy -> New deployment -> Web app -> copy the URL ending in /exec)
+const APPS_SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE';
+
+// ---- field config, keys match Code.gs COLUMN_ORDER for ABG EXACTLY ----
+// (labels are the friendly text shown on the form; keys are the raw sheet
+// column headers, padding and all, since they double as the JSON payload
+// keys sent straight to doPost)
+const FIELDS = {
+  staffing: [
+    {key:"CLEANERS", label:"Cleaners"},
+    {key:"DRIVERS", label:"Drivers"},
+  ],
+  fleet: [
+    {key:"LARGE EQUIPMENT (15 SPACES)", label:"Large Equipment"},
+    {key:"SUV F-W-S ( 20 SPACES)", label:"SUV / F-W-S"},
+    {key:"SPECIALITY ( 11 SPACES)", label:"Specialty"},
+    {key:"SEDAN ( 25 SPACES)", label:"Sedan"},
+    {key:"PICK UP ( 6 SPACES)", label:"Pick Up"},
+    {key:"RETURNS ( 26 SPACES)", label:"Returns (Lot)", hint:"Vehicles currently in the returns lot"},
+  ],
+  qta: [
+    {key:"QTA DIRTY", label:"QTA Dirty"},
+    {key:"QTA CLEAN", label:"QTA Clean"},
+  ],
+  activity: [
+    {key:"Reservations", label:"Reservations"},
+    {key:"Returns", label:"Returns (Completed)", hint:"Completed rental returns, not the lot count"},
+  ],
+  ev: [
+    {key:"EV Charged", label:"EV Charged"},
+    {key:"EV Not Charged", label:"EV Not Charged"},
+  ],
+};
+
+const state = {};
+Object.values(FIELDS).flat().forEach(f => state[f.key] = 0);
+
+function buildStepper(f, variant){
+  const el = document.createElement('div');
+  el.className = 'card' + (variant ? ' ' + variant : '');
+  el.innerHTML = `
+    <div class="card-label">${f.label}</div>
+    <div class="stepper">
+      <div class="step-btn" data-key="${f.key}" data-dir="-1">–</div>
+      <input class="flap" type="text" inputmode="numeric" pattern="[0-9]*" data-flap="${f.key}" value="0">
+      <div class="step-btn" data-key="${f.key}" data-dir="1">+</div>
+    </div>
+    ${f.hint ? `<div class="card-hint">${f.hint}</div>` : ''}`;
+  return el;
+}
+
+Object.entries(FIELDS).forEach(([group, fields])=>{
+  const container = document.querySelector(`[data-group="${group}"]`);
+  const variant = group === 'staffing' ? 'staffing' : null;
+  fields.forEach(f=>{
+    container.appendChild(buildStepper(f, variant));
+  });
+});
+
+function updateDisplay(key){
+  const val = state[key];
+  const flap = document.querySelector(`[data-flap="${CSS.escape(key)}"]`);
+  flap.classList.add('flip');
+  setTimeout(()=>{ flap.value = val; flap.classList.remove('flip'); }, 90);
+}
+
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.step-btn');
+  if(!btn) return;
+  const key = btn.dataset.key;
+  const dir = parseInt(btn.dataset.dir, 10);
+  state[key] = Math.max(0, state[key] + dir);
+  updateDisplay(key);
+});
+
+document.addEventListener('input', (e)=>{
+  const input = e.target.closest('.flap');
+  if(!input) return;
+  const key = input.dataset.flap;
+  const raw = input.value;
+  const clean = raw.replace(/[^0-9]/g, '');
+
+  if(clean !== raw){
+    const pos = input.selectionStart - (raw.length - clean.length);
+    input.value = clean;
+    const newPos = Math.max(0, pos);
+    input.setSelectionRange(newPos, newPos);
+  }
+
+  state[key] = clean === '' ? 0 : parseInt(clean, 10);
+  if(clean !== ''){
+    input.closest('.card').classList.remove('invalid');
+  }
+});
+
+document.addEventListener('focus', (e)=>{
+  const input = e.target.closest && e.target.closest('.flap');
+  if(!input) return;
+  input.select();
+}, true);
+
+document.addEventListener('blur', (e)=>{
+  const input = e.target.closest && e.target.closest('.flap');
+  if(!input) return;
+  if(input.value === '') { input.value = '0'; state[input.dataset.flap] = 0; }
+}, true);
+
+// timestamp
+document.getElementById('stamp').textContent = new Date().toLocaleString('en-US', {
+  weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'
+});
+
+// ---- last submitted / next due tracker (this device only, no alerts) ----
+const LOC = 'abg';
+const dayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const lastSubmitKey = () => `${LOC}_lastsubmit_${dayKey()}`;
+
+function getLastSubmitTs(){ try{ const v = localStorage.getItem(lastSubmitKey()); return v ? Number(v) : null; }catch(e){ return null; } }
+function setLastSubmitTs(ts){ try{ localStorage.setItem(lastSubmitKey(), String(ts)); }catch(e){} }
+
+function computeNextDue(){
+  const next = new Date();
+  next.setMinutes(0, 0, 0);
+  next.setHours(next.getHours() + 1);
+  return next.getTime();
+}
+function fmtRelative(ms){
+  const mins = Math.round((Date.now() - ms) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const h = Math.floor(mins/60), r = mins%60;
+  return `${h}h ${r}m ago`;
+}
+function fmtCountdown(ms){
+  const clock = new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const diff = ms - Date.now();
+  const mins = Math.round(Math.abs(diff)/60000);
+  const h = Math.floor(mins/60), r = mins%60;
+  const label = h > 0 ? `${h}h ${r}m` : `${r}m`;
+  return diff >= 0 ? `${clock} (in ${label})` : `${clock} (overdue ${label})`;
+}
+
+function tickReminder(){
+  const lastTs = getLastSubmitTs();
+  const lastEl = document.getElementById('lastSubmitValue');
+  if (lastTs){
+    lastEl.textContent = fmtRelative(lastTs);
+    const mins = (Date.now() - lastTs) / 60000;
+    lastEl.className = 'rb-value ' + (mins <= 65 ? 'ok' : mins <= 90 ? 'warn' : 'bad');
+  } else {
+    lastEl.textContent = 'None yet today';
+    lastEl.className = 'rb-value';
+  }
+
+  const due = computeNextDue();
+  const overdue = Date.now() > due;
+  const nextEl = document.getElementById('nextDueValue');
+  nextEl.textContent = fmtCountdown(due);
+  nextEl.className = 'rb-value ' + (overdue ? 'bad' : 'ok');
+}
+
+tickReminder();
+setInterval(tickReminder, 20000);
+
+// ---- submit ----
+function showToast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+document.getElementById('submitBtn').addEventListener('click', ()=>{
+  const emptyInputs = Array.from(document.querySelectorAll('.flap'))
+    .filter(input => input.value.trim() === '');
+
+  document.querySelectorAll('.card').forEach(card => card.classList.remove('invalid'));
+
+  if (emptyInputs.length > 0) {
+    emptyInputs.forEach(input => input.closest('.card').classList.add('invalid'));
+    emptyInputs[0].focus();
+    emptyInputs[0].closest('.section').scrollIntoView({behavior:'smooth', block:'center'});
+    showToast('Fill in all fields before submitting', true);
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const payload = Object.assign({Timestamp: new Date().toISOString()}, state);
+
+  function done(ok, msg){
+    btn.disabled = false;
+    btn.textContent = 'Submit Scorecard';
+    showToast(msg, !ok);
+    if(ok){
+      Object.keys(state).forEach(k=>{ state[k]=0; updateDisplay(k); });
+      setLastSubmitTs(Date.now());
+      tickReminder();
+    }
+  }
+
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') === 0){
+    console.log('Scorecard payload (demo mode - no APPS_SCRIPT_URL set):', payload);
+    setTimeout(()=>done(true, 'Saved (demo mode) ✓'), 500);
+    return;
+  }
+
+  // Sent as text/plain on purpose -- this keeps it a CORS "simple request"
+  // so the browser skips the preflight OPTIONS call, which Apps Script web
+  // apps don't handle.
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.ok) {
+        done(true, 'Saved to sheet ✓');
+      } else {
+        done(false, 'Error: ' + (data && data.error ? data.error : 'try again'));
+      }
+    })
+    .catch(err => {
+      done(false, 'Error: ' + (err && err.message ? err.message : 'try again'));
+    });
+});
+</script>
+
+</body>
+</html>
