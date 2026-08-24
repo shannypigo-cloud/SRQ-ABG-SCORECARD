@@ -76,6 +76,9 @@
   .card-label{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px;
     min-height:32px;display:flex;align-items:flex-start;}
   .card-hint{font-size:10.5px;color:var(--muted);margin-top:6px;line-height:1.4;}
+  .card-last{font-size:10.5px;color:var(--navy);font-weight:700;margin-top:6px;
+    min-height:14px;letter-spacing:.01em;}
+  .card-last:empty{margin-top:0;min-height:0;}
 
   .stepper{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .step-btn{
@@ -102,6 +105,7 @@
   .card.staffing .flap{color:var(--orange-deep);caret-color:var(--orange-deep);}
   .card.staffing .step-btn{border-color:#F3D6AE;}
   .card.staffing .step-btn:active{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .card.staffing .card-last{color:var(--orange-deep);}
 
   .card.invalid{border-color:var(--danger);}
   .card.invalid .card-label{color:var(--danger);}
@@ -247,6 +251,7 @@ function buildStepper(f, variant){
       <input class="flap" type="text" inputmode="numeric" pattern="[0-9]*" data-flap="${f.key}" value="0">
       <div class="step-btn" data-key="${f.key}" data-dir="1">+</div>
     </div>
+    <div class="card-last" data-last="${f.key}"></div>
     ${f.hint ? `<div class="card-hint">${f.hint}</div>` : ''}`;
   return el;
 }
@@ -258,6 +263,46 @@ Object.entries(FIELDS).forEach(([group, fields])=>{
     container.appendChild(buildStepper(f, variant));
   });
 });
+
+// ---- per-field "Last: N" hints, sourced from the most recent scorecard row ----
+function normalizeKey(k){
+  return String(k).toUpperCase().replace(/\s+/g, ' ').trim();
+}
+
+function extractLatestRow(json){
+  if(!json) return null;
+  const rows = Array.isArray(json.data) ? json.data
+             : Array.isArray(json.rows) ? json.rows
+             : Array.isArray(json.responses) ? json.responses
+             : Array.isArray(json) ? json
+             : null;
+  if(!rows || !rows.length) return null;
+  return rows[rows.length - 1];
+}
+
+function applyLastValues(row){
+  if(!row) return;
+  const normalizedRow = {};
+  Object.keys(row).forEach(k => { normalizedRow[normalizeKey(k)] = row[k]; });
+
+  Object.values(FIELDS).flat().forEach(f=>{
+    let val = row[f.key];
+    if(val === undefined) val = normalizedRow[normalizeKey(f.key)];
+    if(val === undefined || val === null || val === '') return;
+    const el = document.querySelector(`[data-last="${CSS.escape(f.key)}"]`);
+    if(el) el.textContent = `Last: ${val}`;
+  });
+}
+
+function loadLastSubmission(){
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') === 0) return;
+  fetch(`${APPS_SCRIPT_URL}?action=data`)
+    .then(res => res.json())
+    .then(json => applyLastValues(extractLatestRow(json)))
+    .catch(()=>{ /* silent -- these are a nice-to-have, not critical to the form working */ });
+}
+
+loadLastSubmission();
 
 function updateDisplay(key){
   const val = state[key];
@@ -401,6 +446,7 @@ document.getElementById('submitBtn').addEventListener('click', ()=>{
     btn.textContent = 'Submit Scorecard';
     showToast(msg, !ok);
     if(ok){
+      applyLastValues(payload);
       Object.keys(state).forEach(k=>{ state[k]=0; updateDisplay(k); });
       setLastSubmitTs(Date.now());
       tickReminder();
