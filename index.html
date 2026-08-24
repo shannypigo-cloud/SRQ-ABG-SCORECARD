@@ -54,6 +54,7 @@
   .reminder-bar .rb-value.ok{color:#178453;}
   .reminder-bar .rb-value.warn{color:var(--orange-deep);}
   .reminder-bar .rb-value.bad{color:var(--danger);}
+  .reminder-bar .rb-value.loading{color:var(--muted);font-style:italic;}
 
   .hour-warning{
     display:none;align-items:center;gap:8px;
@@ -115,6 +116,7 @@
   .card-last{font-size:10.5px;color:var(--navy);font-weight:700;margin-top:6px;
     min-height:14px;letter-spacing:.01em;}
   .card-last:empty{margin-top:0;min-height:0;}
+  .card-last.loading{color:var(--muted);font-weight:600;font-style:italic;}
 
   .stepper{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .step-btn{
@@ -322,6 +324,14 @@ Object.entries(FIELDS).forEach(([group, fields])=>{
   });
 });
 
+// Apps Script's /exec endpoint can take several seconds to spin up on a cold
+// start -- show a visible loading state immediately so the wait isn't
+// mistaken for the page being broken.
+document.querySelectorAll('.card-last').forEach(el=>{
+  el.textContent = 'Loading…';
+  el.classList.add('loading');
+});
+
 // ---- per-field "Last: N" hints, sourced from the most recent scorecard row ----
 function normalizeKey(k){
   return String(k).toUpperCase().replace(/\s+/g, ' ').trim();
@@ -338,7 +348,15 @@ function extractLatestRow(json){
   return rows[rows.length - 1];
 }
 
+function clearLastLoadingState(){
+  document.querySelectorAll('.card-last.loading').forEach(el=>{
+    el.textContent = '';
+    el.classList.remove('loading');
+  });
+}
+
 function applyLastValues(row){
+  clearLastLoadingState();
   if(!row) return;
   const normalizedRow = {};
   Object.keys(row).forEach(k => { normalizedRow[normalizeKey(k)] = row[k]; });
@@ -356,6 +374,7 @@ function applyLastValues(row){
 // (Timestamp is matched exactly, not by prefix, same rule as elsewhere in this
 // codebase -- "Timestamp" and "Time" would otherwise collide.)
 let teamLastTs = null;
+let teamFetchAttempted = false;
 
 function findTimestampValue(row){
   if(!row) return null;
@@ -373,16 +392,25 @@ function applyTeamLastSubmission(row){
 }
 
 function loadLastSubmission(){
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') === 0) return;
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') === 0){
+    teamFetchAttempted = true;
+    clearLastLoadingState();
+    return;
+  }
   fetch(`${APPS_SCRIPT_URL}?action=data`)
     .then(res => res.json())
     .then(json => {
       const row = extractLatestRow(json);
       applyLastValues(row);
       applyTeamLastSubmission(row);
-      tickReminder();
     })
-    .catch(()=>{ /* silent -- these are a nice-to-have, not critical to the form working */ });
+    .catch(()=>{ /* silent -- these are a nice-to-have, not critical to the form working */
+      clearLastLoadingState();
+    })
+    .finally(()=>{
+      teamFetchAttempted = true;
+      tickReminder();
+    });
 }
 
 loadLastSubmission();
@@ -470,6 +498,10 @@ function fmtRelative(ms){
   const h = Math.floor(mins/60), r = mins%60;
   return `${h}h ${r}m ago`;
 }
+function fmtClockAndRelative(ms){
+  const clock = new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${clock} · ${fmtRelative(ms)}`;
+}
 function fmtCountdown(ms){
   const clock = new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const diff = ms - Date.now();
@@ -493,9 +525,12 @@ function tickReminder(){
 
   const teamEl = document.getElementById('teamLastValue');
   if (teamLastTs){
-    teamEl.textContent = fmtRelative(teamLastTs);
+    teamEl.textContent = fmtClockAndRelative(teamLastTs);
     const mins = (Date.now() - teamLastTs) / 60000;
     teamEl.className = 'rb-value ' + (mins <= 65 ? 'ok' : mins <= 90 ? 'warn' : 'bad');
+  } else if (!teamFetchAttempted) {
+    teamEl.textContent = 'Loading…';
+    teamEl.className = 'rb-value loading';
   } else {
     teamEl.textContent = '—';
     teamEl.className = 'rb-value';
