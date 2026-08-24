@@ -31,10 +31,17 @@
     background:linear-gradient(180deg,var(--bg) 80%,rgba(243,246,251,0));
     padding:18px 18px 10px;
     border-bottom:1px solid var(--hairline);
-    display:flex;align-items:center;gap:12px;
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   }
   header .logo-img{height:42px;width:auto;flex:none;display:block;}
   header .htext{display:flex;flex-direction:column;}
+  header .dashboard-link{
+    margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:6px;
+    background:var(--navy);color:#fff;text-decoration:none;
+    font-size:12px;font-weight:700;padding:9px 14px;border-radius:999px;
+    white-space:nowrap;
+  }
+  header .dashboard-link:active{background:var(--navy-deep);}
   .eyebrow{
     font-family:'Inter',sans-serif;font-weight:700;
     font-size:11px;letter-spacing:.18em;color:var(--orange-deep);
@@ -185,6 +192,9 @@
     <h1>Lot Scorecard</h1>
     <div class="subline" id="stamp"></div>
   </div>
+  <a class="dashboard-link" href="https://shannypigo-cloud.github.io/SRQ-ScorecardDashboard/" target="_blank" rel="noopener">
+    <span aria-hidden="true">📊</span> Open Dashboard
+  </a>
 </header>
 
 <div class="reminder-bar" id="reminderBar">
