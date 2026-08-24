@@ -155,6 +155,10 @@
     <span class="rb-value" id="lastSubmitValue">—</span>
   </div>
   <div class="rb-item">
+    <span class="rb-label">Last Scorecard (Team)</span>
+    <span class="rb-value" id="teamLastValue">—</span>
+  </div>
+  <div class="rb-item">
     <span class="rb-label">Next Due</span>
     <span class="rb-value" id="nextDueValue">—</span>
   </div>
@@ -294,15 +298,41 @@ function applyLastValues(row){
   });
 }
 
+// ---- team-wide "last scorecard from anyone" tracker, sourced from the sheet ----
+// (Timestamp is matched exactly, not by prefix, same rule as elsewhere in this
+// codebase -- "Timestamp" and "Time" would otherwise collide.)
+let teamLastTs = null;
+
+function findTimestampValue(row){
+  if(!row) return null;
+  if(row.Timestamp !== undefined) return row.Timestamp;
+  const key = Object.keys(row).find(k => k.trim().toLowerCase() === 'timestamp');
+  return key ? row[key] : null;
+}
+
+function applyTeamLastSubmission(row){
+  const raw = findTimestampValue(row);
+  if(!raw) return;
+  const d = new Date(raw);
+  if(isNaN(d.getTime())) return;
+  teamLastTs = d.getTime();
+}
+
 function loadLastSubmission(){
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') === 0) return;
   fetch(`${APPS_SCRIPT_URL}?action=data`)
     .then(res => res.json())
-    .then(json => applyLastValues(extractLatestRow(json)))
+    .then(json => {
+      const row = extractLatestRow(json);
+      applyLastValues(row);
+      applyTeamLastSubmission(row);
+      tickReminder();
+    })
     .catch(()=>{ /* silent -- these are a nice-to-have, not critical to the form working */ });
 }
 
 loadLastSubmission();
+setInterval(loadLastSubmission, 60000); // keep the team indicator fresh for anyone with the form open
 
 function updateDisplay(key){
   const val = state[key];
@@ -402,6 +432,16 @@ function tickReminder(){
     lastEl.className = 'rb-value';
   }
 
+  const teamEl = document.getElementById('teamLastValue');
+  if (teamLastTs){
+    teamEl.textContent = fmtRelative(teamLastTs);
+    const mins = (Date.now() - teamLastTs) / 60000;
+    teamEl.className = 'rb-value ' + (mins <= 65 ? 'ok' : mins <= 90 ? 'warn' : 'bad');
+  } else {
+    teamEl.textContent = '—';
+    teamEl.className = 'rb-value';
+  }
+
   const due = computeNextDue();
   const overdue = Date.now() > due;
   const nextEl = document.getElementById('nextDueValue');
@@ -447,6 +487,7 @@ document.getElementById('submitBtn').addEventListener('click', ()=>{
     showToast(msg, !ok);
     if(ok){
       applyLastValues(payload);
+      applyTeamLastSubmission(payload);
       Object.keys(state).forEach(k=>{ state[k]=0; updateDisplay(k); });
       setLastSubmitTs(Date.now());
       tickReminder();
