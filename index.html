@@ -55,6 +55,42 @@
   .reminder-bar .rb-value.warn{color:var(--orange-deep);}
   .reminder-bar .rb-value.bad{color:var(--danger);}
 
+  .hour-warning{
+    display:none;align-items:center;gap:8px;
+    margin:0 18px 4px;padding:11px 14px;border-radius:12px;
+    background:#FFF3E0;border:1px solid var(--orange);
+    color:var(--orange-deep);font-size:13px;font-weight:700;line-height:1.3;
+  }
+  .hour-warning.show{display:flex;}
+  .hour-warning .hw-icon{font-size:17px;line-height:1;flex:none;}
+
+  .modal-overlay{
+    display:none;position:fixed;inset:0;z-index:30;
+    background:rgba(10,37,80,.55);
+    align-items:center;justify-content:center;padding:24px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-card{
+    background:var(--panel);border-radius:18px;padding:28px 22px 22px;
+    max-width:340px;width:100%;text-align:center;
+    box-shadow:0 16px 48px rgba(10,37,80,.4);
+  }
+  .modal-icon{font-size:38px;line-height:1;margin-bottom:10px;}
+  .modal-title{font-family:'Poppins',sans-serif;font-weight:800;font-size:18px;
+    color:var(--navy-deep);margin-bottom:10px;}
+  .modal-text{font-size:14.5px;color:var(--text);line-height:1.5;margin-bottom:4px;}
+  .modal-text strong{color:var(--navy-deep);}
+  .modal-text-sub{font-size:14.5px;color:var(--muted);line-height:1.5;margin-bottom:22px;}
+  .modal-actions{display:flex;flex-direction:column;gap:10px;}
+  .modal-btn{
+    border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;
+    cursor:pointer;touch-action:manipulation;
+  }
+  .modal-btn-cancel{background:var(--navy);color:#fff;}
+  .modal-btn-cancel:active{background:var(--navy-deep);}
+  .modal-btn-confirm{background:var(--panel-2);color:var(--muted);border:1px solid var(--hairline);}
+  .modal-btn-confirm:active{background:#E5E9F0;}
+
   main{padding:18px;max-width:520px;margin:0 auto;}
 
   .section{margin-bottom:26px;}
@@ -161,6 +197,24 @@
   <div class="rb-item">
     <span class="rb-label">Next Due</span>
     <span class="rb-value" id="nextDueValue">—</span>
+  </div>
+</div>
+
+<div class="hour-warning" id="hourWarning">
+  <span class="hw-icon">⚠️</span>
+  <span id="hourWarningText"></span>
+</div>
+
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal-card">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">Already Submitted This Hour</div>
+    <div class="modal-text" id="confirmModalText"></div>
+    <div class="modal-text-sub">Are you sure you want to send another one?</div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" id="confirmCancelBtn">Go Back</button>
+      <button class="modal-btn modal-btn-confirm" id="confirmProceedBtn">Yes, Submit Anyway</button>
+    </div>
   </div>
 </div>
 
@@ -404,6 +458,11 @@ function computeNextDue(){
   next.setHours(next.getHours() + 1);
   return next.getTime();
 }
+function currentHourStart(){
+  const start = new Date();
+  start.setMinutes(0, 0, 0);
+  return start.getTime();
+}
 function fmtRelative(ms){
   const mins = Math.round((Date.now() - ms) / 60000);
   if (mins < 1) return 'just now';
@@ -442,6 +501,15 @@ function tickReminder(){
     teamEl.className = 'rb-value';
   }
 
+  const warnEl = document.getElementById('hourWarning');
+  if (teamLastTs && teamLastTs >= currentHourStart()){
+    const t = new Date(teamLastTs).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    document.getElementById('hourWarningText').textContent = `Already submitted this hour — last at ${t}`;
+    warnEl.classList.add('show');
+  } else {
+    warnEl.classList.remove('show');
+  }
+
   const due = computeNextDue();
   const overdue = Date.now() > due;
   const nextEl = document.getElementById('nextDueValue');
@@ -475,6 +543,27 @@ document.getElementById('submitBtn').addEventListener('click', ()=>{
     return;
   }
 
+  if (teamLastTs && teamLastTs >= currentHourStart()){
+    const t = new Date(teamLastTs).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    document.getElementById('confirmModalText').innerHTML =
+      `A scorecard was already submitted this hour, at <strong>${t}</strong>.`;
+    document.getElementById('confirmOverlay').classList.add('show');
+    return;
+  }
+
+  performSubmit();
+});
+
+document.getElementById('confirmCancelBtn').addEventListener('click', ()=>{
+  document.getElementById('confirmOverlay').classList.remove('show');
+});
+
+document.getElementById('confirmProceedBtn').addEventListener('click', ()=>{
+  document.getElementById('confirmOverlay').classList.remove('show');
+  performSubmit();
+});
+
+function performSubmit(){
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.textContent = 'Submitting…';
@@ -519,7 +608,7 @@ document.getElementById('submitBtn').addEventListener('click', ()=>{
     .catch(err => {
       done(false, 'Error: ' + (err && err.message ? err.message : 'try again'));
     });
-});
+}
 </script>
 
 </body>
